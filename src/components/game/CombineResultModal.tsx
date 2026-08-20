@@ -1,0 +1,55 @@
+import { useEffect, useState } from 'react';
+import type { CombineResultView } from '@/hooks/useCombine';
+
+export function CombineResultModal({
+  result,
+  onClose,
+}: {
+  result: CombineResultView;
+  onClose: () => void;
+}) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={onClose}
+    >
+      <div
+        className={`w-full max-w-xs rounded-2xl border border-void-600 bg-void-800 p-6 text-center shadow-xl transition-all duration-300 ease-out ${
+          visible ? 'scale-100 opacity-100' : 'scale-90 opacity-0'
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {result.isWorldFirst ? (
+          <div className="mb-2 inline-block rounded-full bg-ember-500 px-3 py-1 text-xs font-bold tracking-wide text-void-950">
+            WORLD FIRST
+          </div>
+        ) : result.isNewToPlayer ? (
+          <div className="mb-2 inline-block rounded-full bg-arcane-500 px-3 py-1 text-xs font-bold tracking-wide text-void-950">
+            NEW
+          </div>
+        ) : null}
+
+        <div className="font-display text-3xl text-parchment-200">
+          {result.resultElement.name}
+        </div>
+        <p className="mt-2 text-sm text-parchment-300/70">{result.resultElement.description}</p>
+        <p className="mt-1 text-xs text-parchment-300/40">{result.resultElement.category}</p>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-5 rounded-lg border border-void-600 bg-void-900 px-4 py-2 text-sm transition hover:bg-void-700"
+        >
+          關閉
+        </button>
+      </div>
+    </div>
+  );
+}

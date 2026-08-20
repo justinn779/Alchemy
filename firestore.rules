@@ -1,0 +1,86 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // ---------------------------------------------------------------------
+    // elements — the global encyclopedia of every concept discovered so far.
+    // Publicly readable by any signed-in player ("讀公開 Elements"). Never
+    // client-writable: creation, creatorId/creatorName, and world-first
+    // status are decided exclusively by Cloud Functions transactions.
+    // ---------------------------------------------------------------------
+    match /elements/{elementId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // recipes — canonical `${minElementId}_${maxElementId}` -> result cache.
+    // Publicly readable per spec ("讀公開 Recipes"); the client app itself
+    // deliberately never ships a "browse all recipes" UI so discovery still
+    // feels earned, but the data is not treated as secret at the rules layer.
+    // Never client-writable — the recipe cache is only ever created inside
+    // the combineElements transaction.
+    // ---------------------------------------------------------------------
+    match /recipes/{recipeKey} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // extractRecipes — server-only cache for the Extract feature. The client
+    // never needs to query this directly (extractElement always goes through
+    // the callable), so it stays fully private.
+    // ---------------------------------------------------------------------
+    match /extractRecipes/{sourceElementId} {
+      allow read, write: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // users/{uid} — mana, gold, counters. Readable only by the owner.
+    // Never client-writable: Mana/Gold/counters are backend-authoritative.
+    // ---------------------------------------------------------------------
+    match /users/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // userElements/{uid}_{elementId} — a player's personal collection.
+    // Readable only by the owner; the frontend must query with
+    // `where('uid', '==', currentUid)` for list reads to satisfy this rule.
+    // Never client-writable — granted only via Cloud Functions transactions.
+    // ---------------------------------------------------------------------
+    match /userElements/{docId} {
+      allow read: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // combineHistory — a player's recent combine actions (for the "最近合成"
+    // panel / click-to-reload-into-slot UX). Same owner-only read pattern as
+    // userElements; the frontend must query with `where('uid', '==', uid)`.
+    // Never client-writable — only written by the combineElements callable.
+    // ---------------------------------------------------------------------
+    match /combineHistory/{docId} {
+      allow read: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // aiUsageMetrics — internal cost/observability log. Never client-visible.
+    // ---------------------------------------------------------------------
+    match /aiUsageMetrics/{docId} {
+      allow read, write: if false;
+    }
+
+    // Default deny for anything not explicitly matched above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
