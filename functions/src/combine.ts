@@ -57,11 +57,17 @@ export const combineElements = onCall({ secrets: [OPENAI_API_KEY] }, async (requ
 
   const recipeKey = buildRecipeKey(elementAId, elementBId);
 
-  // ---- Recipe cache fast path: never call the AI for a known recipe ----
+  // ---- Recipe cache fast path: never call the AI for a known recipe,
+  // whether it previously succeeded or was already judged impossible ----
   let resultElement: ElementDoc | null = null;
   const cachedRecipe = await getRecipe(recipeKey);
   if (cachedRecipe) {
-    resultElement = await getElementById(cachedRecipe.resultElementId);
+    if (!cachedRecipe.failed && cachedRecipe.resultElementId) {
+      resultElement = await getElementById(cachedRecipe.resultElementId);
+    } else if (cachedRecipe.failed) {
+      const result: CombineResult = { success: false };
+      return result;
+    }
   }
 
   // ---- Cache miss: call the AI *outside* any transaction, then reconcile ----
@@ -75,20 +81,39 @@ export const combineElements = onCall({ secrets: [OPENAI_API_KEY] }, async (requ
         elementBName: elementB.name,
       });
       aiSucceeded = true;
-      const normalizedName = normalizeElementName(aiOutput.result);
 
       resultElement = await db.runTransaction(async (tx) => {
         const recipeRef = recipeDocRef(recipeKey);
         const recipeSnap = await tx.get(recipeRef);
         if (recipeSnap.exists) {
-          // Someone else's request won the race while we waited on the AI.
+          // Someone else's request won the race while we waited on the AI —
+          // defer to whatever they committed, success or failure alike.
           const existingRecipe = recipeSnap.data() as RecipeDoc;
+          if (existingRecipe.failed || !existingRecipe.resultElementId) {
+            return null;
+          }
           const existingElSnap = await tx.get(elementDocRef(existingRecipe.resultElementId));
           return existingElSnap.data() as ElementDoc;
         }
 
+        if (!aiOutput.possible) {
+          const recipe: RecipeDoc = {
+            id: recipeKey,
+            elementAId,
+            elementBId,
+            resultElementId: null,
+            failed: true,
+            creatorId: uid,
+            creatorName: userDoc.displayName,
+            createdAt: Date.now(),
+          };
+          tx.set(recipeRef, recipe);
+          return null;
+        }
+
         // A *different* recipe may have already produced this exact concept
         // (e.g. two different ingredient pairs both yielding "蒸氣").
+        const normalizedName = normalizeElementName(aiOutput.result);
         const dupSnap = await tx.get(elementsByNormalizedNameQuery(normalizedName));
         let element: ElementDoc;
         if (!dupSnap.empty) {
@@ -116,6 +141,7 @@ export const combineElements = onCall({ secrets: [OPENAI_API_KEY] }, async (requ
           elementAId,
           elementBId,
           resultElementId: element.id,
+          failed: false,
           creatorId: uid,
           creatorName: userDoc.displayName,
           createdAt: Date.now(),
@@ -153,7 +179,8 @@ export const combineElements = onCall({ secrets: [OPENAI_API_KEY] }, async (requ
   }
 
   if (!resultElement) {
-    throw new HttpsError('internal', '煉成失敗，請再試一次。');
+    const result: CombineResult = { success: false };
+    return result;
   }
 
   const settlement = await settleGrant(uid, resultElement);
@@ -166,6 +193,7 @@ export const combineElements = onCall({ secrets: [OPENAI_API_KEY] }, async (requ
   });
 
   const result: CombineResult = {
+    success: true,
     resultElement,
     ...settlement,
   };

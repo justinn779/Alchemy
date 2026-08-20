@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { combineElementsApi } from '@/services/functionsApi';
 import type { ElementDoc } from '@/types/models';
 
-export interface CombineResultView {
-  resultElement: ElementDoc;
-  isNewToPlayer: boolean;
-  isWorldFirst: boolean;
-}
+export type CombineResultView =
+  | {
+      success: true;
+      resultElement: ElementDoc;
+      isNewToPlayer: boolean;
+      isWorldFirst: boolean;
+    }
+  | { success: false };
 
 function describeCombineError(err: unknown): string {
   if (
@@ -45,21 +48,29 @@ export function useCombine() {
   const clearSlotA = () => setSlotA(null);
   const clearSlotB = () => setSlotB(null);
 
-  const combine = async () => {
-    if (!slotA || !slotB || pending) return;
+  /** Returns true if the request completed (with a result either way) so the caller can clear slots; false on a thrown error, so the selection survives for a retry. */
+  const combine = async (): Promise<boolean> => {
+    if (!slotA || !slotB || pending) return false;
     setPending(true);
     setError(null);
     try {
       const data = await combineElementsApi(slotA.id, slotB.id);
-      setResult({
-        resultElement: data.resultElement,
-        isNewToPlayer: data.isNewToPlayer,
-        isWorldFirst: data.isWorldFirst,
-      });
+      setResult(
+        data.success
+          ? {
+              success: true,
+              resultElement: data.resultElement,
+              isNewToPlayer: data.isNewToPlayer,
+              isWorldFirst: data.isWorldFirst,
+            }
+          : { success: false },
+      );
       setSlotA(null);
       setSlotB(null);
+      return true;
     } catch (err) {
       setError(describeCombineError(err));
+      return false;
     } finally {
       setPending(false);
     }

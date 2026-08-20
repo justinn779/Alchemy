@@ -26,22 +26,38 @@ export function CombineResultModal({
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        {result.isWorldFirst ? (
-          <div className="mb-2 inline-block rounded-full bg-ember-500 px-3 py-1 text-xs font-bold tracking-wide text-void-950">
-            WORLD FIRST
-          </div>
-        ) : result.isNewToPlayer ? (
-          <div className="mb-2 inline-block rounded-full bg-arcane-500 px-3 py-1 text-xs font-bold tracking-wide text-void-950">
-            NEW
-          </div>
-        ) : null}
+        {!result.success ? (
+          <>
+            <div className="text-4xl leading-none">🤷</div>
+            <div className="mt-2 font-display text-xl text-parchment-200">沒有明顯關聯</div>
+            <p className="mt-2 text-sm text-parchment-300/70">
+              這兩者之間找不到合理的煉成結果，換個組合試試看。
+            </p>
+          </>
+        ) : (
+          <>
+            {result.isWorldFirst ? (
+              <div className="mb-2 inline-block rounded-full bg-ember-500 px-3 py-1 text-xs font-bold tracking-wide text-void-950">
+                WORLD FIRST
+              </div>
+            ) : result.isNewToPlayer ? (
+              <div className="mb-2 inline-block rounded-full bg-arcane-500 px-3 py-1 text-xs font-bold tracking-wide text-void-950">
+                NEW
+              </div>
+            ) : null}
 
-        <div className="text-4xl leading-none">{result.resultElement.icons?.join('') || '✨'}</div>
-        <div className="mt-2 font-display text-3xl text-parchment-200">
-          {result.resultElement.name}
-        </div>
-        <p className="mt-2 text-sm text-parchment-300/70">{result.resultElement.description}</p>
-        <p className="mt-1 text-xs text-parchment-300/40">{result.resultElement.category}</p>
+            <div className="text-4xl leading-none">
+              {result.resultElement.icons?.join('') || '✨'}
+            </div>
+            <div className="mt-2 font-display text-3xl text-parchment-200">
+              {result.resultElement.name}
+            </div>
+            <p className="mt-2 text-sm text-parchment-300/70">
+              {result.resultElement.description}
+            </p>
+            <p className="mt-1 text-xs text-parchment-300/40">{result.resultElement.category}</p>
+          </>
+        )}
 
         <button
           type="button"

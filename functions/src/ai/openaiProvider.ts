@@ -11,11 +11,16 @@ import type {
   ExtractInput,
 } from './provider.js';
 
+// Flat + nullable rather than a zod discriminated union: keeps the JSON
+// schema OpenAI's strict structured-output mode generates simple (plain
+// nullable types, no anyOf), at the cost of validating the
+// possible=true ⇒ fields-present invariant ourselves below.
 const resultSchema = z.object({
-  result: z.string().min(1).max(10),
-  description: z.string().min(1).max(80),
-  category: z.enum(AI_ASSIGNABLE_CATEGORIES),
-  icons: z.array(z.string().min(1).max(8)).min(1).max(3),
+  possible: z.boolean(),
+  result: z.string().min(1).max(10).nullable(),
+  description: z.string().min(1).max(80).nullable(),
+  category: z.enum(AI_ASSIGNABLE_CATEGORIES).nullable(),
+  icons: z.array(z.string().min(1).max(8)).min(1).max(3).nullable(),
 });
 
 const MAX_ATTEMPTS = 3;
@@ -54,7 +59,19 @@ export class OpenAIAlchemyProvider implements AlchemyAIProvider {
         if (!parsed) {
           throw new Error('OpenAI returned no parsed structured output');
         }
-        return parsed;
+        if (!parsed.possible) {
+          return { possible: false };
+        }
+        if (!parsed.result || !parsed.description || !parsed.category || !parsed.icons) {
+          throw new Error('OpenAI said possible=true but omitted required fields');
+        }
+        return {
+          possible: true,
+          result: parsed.result,
+          description: parsed.description,
+          category: parsed.category,
+          icons: parsed.icons,
+        };
       } catch (err) {
         lastError = err;
       }

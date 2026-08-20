@@ -125,7 +125,12 @@ function GameHome({ uid }: { uid: string }) {
                 if (combine.slotA && combine.slotB) {
                   void combine.combine();
                 } else if (extractSource) {
-                  void extract.extract(extractSource.id);
+                  void extract.extract(extractSource.id).then((completed) => {
+                    if (completed) {
+                      combine.clearSlotA();
+                      combine.clearSlotB();
+                    }
+                  });
                 }
               }}
             />

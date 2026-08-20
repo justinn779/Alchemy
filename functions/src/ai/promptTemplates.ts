@@ -3,11 +3,15 @@ import type { ChatMessage, CombineInput, ExtractInput } from './provider.js';
 const CATEGORY_LIST =
   '自然、科學、生物、化學、物理、科技、文明、歷史、文化、神話、抽象概念、日常物品、食物、職業、娛樂';
 
-const ICON_RULES = `icons 是 1 到 3 個能代表這個概念的 emoji：
+const ICON_RULES = `icons 是 1 到 3 個能代表這個概念的 emoji（僅在 possible 為 true 時需要）：
     - 大多數情況下只需要 1 個最貼切的 emoji，這是最常見的狀況。
     - 只有當「兩個」emoji 都真的同樣貼切、缺一不可時，才給 2 個。
     - 只有在真的無法取捨、需要三個才能完整表達時，才給 3 個，這應該是極少數情況。
     - 不要為了填滿數量而加入多餘或勉強的 emoji。`;
+
+const POSSIBLE_RULE_COMBINE = `possible 欄位：如果這兩個概念之間真的完全找不到任何合理、哪怕只是稍微牽強的關聯，沒辦法產生一個站得住腳的新概念，就把 possible 設為 false，其餘欄位可以留空。這應該是非常罕見的情況——大多數概念組合都能從某個角度找到合理連結，只有在真的毫無關聯、任何答案都會顯得荒謬時才使用 false。如果 possible 為 true，其餘欄位都必須填寫。`;
+
+const POSSIBLE_RULE_EXTRACT = `possible 欄位：如果這個概念真的抽象或基礎到無法再萃取出任何更本質、更核心的東西，就把 possible 設為 false，其餘欄位可以留空。這應該是非常罕見的情況。如果 possible 為 true，其餘欄位都必須填寫。`;
 
 const COMBINE_SYSTEM_PROMPT = `你是「萬象爐」世界的規則引擎，不是聊天機器人。你的唯一任務是判斷兩個概念結合後，這個世界會產生什麼新概念，並以結構化 JSON 回答。
 
@@ -22,7 +26,8 @@ const COMBINE_SYSTEM_PROMPT = `你是「萬象爐」世界的規則引擎，不�
 6. 如果沒有著名或普遍認同的答案，才可以考慮語義上合理、但較意料之外的結果；意外程度永遠讓位給合理程度。
 7. 如果兩個輸入概念相同（例如「火」+「火」），仍然必須產生一個合理的新結果。
 8. description 只需要一句簡潔的說明，不要條列、不要多句。
-9. ${ICON_RULES}`;
+9. ${ICON_RULES}
+10. ${POSSIBLE_RULE_COMBINE}`;
 
 const EXTRACT_SYSTEM_PROMPT = `你是「萬象爐」世界的規則引擎，不是聊天機器人。你的唯一任務是從單一概念「萃取」出一個更本質、更基礎、或與它緊密相關的核心概念，並以結構化 JSON 回答。
 
@@ -35,7 +40,8 @@ const EXTRACT_SYSTEM_PROMPT = `你是「萬象爐」世界的規則引擎，不�
 4. 萃取結果應該是輸入概念的本質、成因、或核心組成部分（例如「火」可萃取出「燃燒」，「生命」可萃取出「生存」）。
 5. category 必須是以下其中之一：${CATEGORY_LIST}。
 6. description 只需要一句簡潔的說明，不要條列、不要多句。
-7. ${ICON_RULES}`;
+7. ${ICON_RULES}
+8. ${POSSIBLE_RULE_EXTRACT}`;
 
 export function buildCombineMessages(input: CombineInput): ChatMessage[] {
   return [

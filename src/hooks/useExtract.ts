@@ -19,19 +19,27 @@ export function useExtract() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CombineResultView | null>(null);
 
-  const extract = async (elementId: string) => {
-    if (pending) return;
+  /** Returns true if the request completed (with a result either way) so the caller can clear slots; false on a thrown error, so the selection survives for a retry. */
+  const extract = async (elementId: string): Promise<boolean> => {
+    if (pending) return false;
     setPending(true);
     setError(null);
     try {
       const data = await extractElementApi(elementId);
-      setResult({
-        resultElement: data.resultElement,
-        isNewToPlayer: data.isNewToPlayer,
-        isWorldFirst: data.isWorldFirst,
-      });
+      setResult(
+        data.success
+          ? {
+              success: true,
+              resultElement: data.resultElement,
+              isNewToPlayer: data.isNewToPlayer,
+              isWorldFirst: data.isWorldFirst,
+            }
+          : { success: false },
+      );
+      return true;
     } catch (err) {
       setError(describeExtractError(err));
+      return false;
     } finally {
       setPending(false);
     }

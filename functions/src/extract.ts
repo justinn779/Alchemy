@@ -49,11 +49,17 @@ export const extractElement = onCall({ secrets: [OPENAI_API_KEY] }, async (reque
     throw new HttpsError('permission-denied', '你尚未擁有這個元素。');
   }
 
-  // ---- extractRecipes cache fast path: never call the AI for a known source ----
+  // ---- extractRecipes cache fast path: never call the AI for a known
+  // source, whether it previously succeeded or was already judged impossible ----
   let resultElement: ElementDoc | null = null;
   const cachedRecipe = await getExtractRecipe(elementId);
   if (cachedRecipe) {
-    resultElement = await getElementById(cachedRecipe.resultElementId);
+    if (!cachedRecipe.failed && cachedRecipe.resultElementId) {
+      resultElement = await getElementById(cachedRecipe.resultElementId);
+    } else if (cachedRecipe.failed) {
+      const result: ExtractResult = { success: false };
+      return result;
+    }
   }
 
   // ---- Cache miss: call the AI *outside* any transaction, then reconcile ----
@@ -64,18 +70,36 @@ export const extractElement = onCall({ secrets: [OPENAI_API_KEY] }, async (reque
     try {
       const aiOutput = await provider.extract({ elementName: sourceElement.name });
       aiSucceeded = true;
-      const normalizedName = normalizeElementName(aiOutput.result);
 
       resultElement = await db.runTransaction(async (tx) => {
         const recipeRef = extractRecipeDocRef(elementId);
         const recipeSnap = await tx.get(recipeRef);
         if (recipeSnap.exists) {
-          // Someone else's request won the race while we waited on the AI.
+          // Someone else's request won the race while we waited on the AI —
+          // defer to whatever they committed, success or failure alike.
           const existing = recipeSnap.data() as ExtractRecipeDoc;
+          if (existing.failed || !existing.resultElementId) {
+            return null;
+          }
           const existingElSnap = await tx.get(elementDocRef(existing.resultElementId));
           return existingElSnap.data() as ElementDoc;
         }
 
+        if (!aiOutput.possible) {
+          const recipe: ExtractRecipeDoc = {
+            id: elementId,
+            sourceElementId: elementId,
+            resultElementId: null,
+            failed: true,
+            creatorId: uid,
+            creatorName: userDoc.displayName,
+            createdAt: Date.now(),
+          };
+          tx.set(recipeRef, recipe);
+          return null;
+        }
+
+        const normalizedName = normalizeElementName(aiOutput.result);
         const dupSnap = await tx.get(elementsByNormalizedNameQuery(normalizedName));
         let element: ElementDoc;
         if (!dupSnap.empty) {
@@ -102,6 +126,7 @@ export const extractElement = onCall({ secrets: [OPENAI_API_KEY] }, async (reque
           id: elementId,
           sourceElementId: elementId,
           resultElementId: element.id,
+          failed: false,
           creatorId: uid,
           creatorName: userDoc.displayName,
           createdAt: Date.now(),
@@ -139,12 +164,14 @@ export const extractElement = onCall({ secrets: [OPENAI_API_KEY] }, async (reque
   }
 
   if (!resultElement) {
-    throw new HttpsError('internal', '萃取失敗，請再試一次。');
+    const result: ExtractResult = { success: false };
+    return result;
   }
 
   const settlement = await settleGrant(uid, resultElement);
 
   const result: ExtractResult = {
+    success: true,
     resultElement,
     ...settlement,
   };

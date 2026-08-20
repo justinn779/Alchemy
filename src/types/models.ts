@@ -48,7 +48,9 @@ export interface RecipeDoc {
   id: string; // == recipeKey, `${minElementId}_${maxElementId}`
   elementAId: string;
   elementBId: string;
-  resultElementId: string;
+  /** null when the AI judged these two concepts to have no reasonable connection. */
+  resultElementId: string | null;
+  failed: boolean;
   creatorId: string;
   creatorName: string;
   createdAt: number;
@@ -57,7 +59,9 @@ export interface RecipeDoc {
 export interface ExtractRecipeDoc {
   id: string; // == sourceElementId
   sourceElementId: string;
-  resultElementId: string;
+  /** null when the AI judged this concept to have no further extractable essence. */
+  resultElementId: string | null;
+  failed: boolean;
   creatorId: string;
   creatorName: string;
   createdAt: number;
@@ -103,21 +107,27 @@ export interface AiUsageMetricDoc {
 }
 
 /** Result returned to the client by the combineElements callable. */
-export interface CombineResult {
-  resultElement: ElementDoc;
-  isNewToPlayer: boolean;
-  isWorldFirst: boolean;
-  goldEarned: number;
-  goldTotal: number;
-}
+export type CombineResult =
+  | {
+      success: true;
+      resultElement: ElementDoc;
+      isNewToPlayer: boolean;
+      isWorldFirst: boolean;
+      goldEarned: number;
+      goldTotal: number;
+    }
+  | { success: false };
 
-export interface ExtractResult {
-  resultElement: ElementDoc;
-  isNewToPlayer: boolean;
-  isWorldFirst: boolean;
-  goldEarned: number;
-  goldTotal: number;
-}
+export type ExtractResult =
+  | {
+      success: true;
+      resultElement: ElementDoc;
+      isNewToPlayer: boolean;
+      isWorldFirst: boolean;
+      goldEarned: number;
+      goldTotal: number;
+    }
+  | { success: false };
 
 export const STARTER_ELEMENT_NAMES = ['水', '火', '土', '風', '雷'] as const;
 export type StarterElementName = (typeof STARTER_ELEMENT_NAMES)[number];

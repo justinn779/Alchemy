@@ -9,13 +9,19 @@ export interface ExtractInput {
   elementName: string;
 }
 
-export interface AlchemyAIResult {
-  result: string;
-  description: string;
-  category: ElementCategory;
-  /** 1–3 emoji representing the concept. 1 in the common case; 2 or 3 only when genuinely equally apt. */
-  icons: string[];
-}
+export type AlchemyAIResult =
+  | {
+      possible: true;
+      result: string;
+      description: string;
+      category: ElementCategory;
+      /** 1–3 emoji representing the concept. 1 in the common case; 2 or 3 only when genuinely equally apt. */
+      icons: string[];
+    }
+  | {
+      /** The AI found no plausible connection at all — a legitimate, rare outcome. */
+      possible: false;
+    };
 
 /**
  * The "world rule engine" contract. Every LLM vendor implements this same
