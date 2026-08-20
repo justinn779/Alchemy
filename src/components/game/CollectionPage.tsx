@@ -2,17 +2,20 @@ import { useMemo, useState } from 'react';
 import { ElementCard } from './ElementCard';
 import { extractCategories, filterEntries, sortEntries, type SortMode } from '@/utils/collectionFilters';
 import type { CollectionEntry } from '@/types/view';
+import type { ElementDoc } from '@/types/models';
 
 export function CollectionPage({
   entries,
   discoveredCount,
   worldFirstCount,
-  onSelect,
+  onPick,
+  onInfoClick,
 }: {
   entries: CollectionEntry[];
   discoveredCount: number;
   worldFirstCount: number;
-  onSelect: (entry: CollectionEntry) => void;
+  onPick: (element: ElementDoc) => void;
+  onInfoClick: (entry: CollectionEntry) => void;
 }) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
@@ -67,10 +70,14 @@ export function CollectionPage({
       {visible.length === 0 ? (
         <p className="py-6 text-center text-sm text-parchment-300/40">找不到符合的元素。</p>
       ) : (
-        <ul className="flex flex-wrap gap-1.5">
+        <ul className="flex flex-wrap gap-2 pt-1">
           {visible.map((entry) => (
             <li key={entry.element.id}>
-              <ElementCard element={entry.element} onClick={() => onSelect(entry)} />
+              <ElementCard
+                element={entry.element}
+                onClick={() => onPick(entry.element)}
+                onInfoClick={() => onInfoClick(entry)}
+              />
             </li>
           ))}
         </ul>

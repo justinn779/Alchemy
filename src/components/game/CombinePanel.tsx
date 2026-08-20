@@ -25,7 +25,7 @@ export function CombinePanel({
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center justify-center gap-2">
         <ElementSlot element={slotA} onClear={onClearA} pending={pending} />
         <span className="text-parchment-300/40">＋</span>
         <ElementSlot element={slotB} onClear={onClearB} pending={pending} />
@@ -38,7 +38,7 @@ export function CombinePanel({
           {pending ? `${label}中…` : label}
         </button>
       </div>
-      {error && <p className="mt-2 text-sm text-ember-400">{error}</p>}
+      {error && <p className="mt-2 text-center text-sm text-ember-400">{error}</p>}
     </div>
   );
 }

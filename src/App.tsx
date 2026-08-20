@@ -15,6 +15,7 @@ import { CollectionPage } from '@/components/game/CollectionPage';
 import { ElementDetailModal } from '@/components/game/ElementDetailModal';
 import { HistoryPanel } from '@/components/game/HistoryPanel';
 import type { CollectionEntry } from '@/types/view';
+import type { ElementDoc } from '@/types/models';
 
 type Tab = 'combine' | 'collection';
 
@@ -49,6 +50,11 @@ function GameHome({ uid }: { uid: string }) {
     () => new Map(entries.map((e) => [e.element.id, e.element])),
     [entries],
   );
+
+  const pickForCombine = (element: ElementDoc) => {
+    combine.pickElement(element);
+    setTab('combine');
+  };
 
   return (
     <div className="min-h-screen bg-void-950 px-4 py-6 text-parchment-200 sm:px-8">
@@ -125,12 +131,17 @@ function GameHome({ uid }: { uid: string }) {
 
             <section>
               <p className="mb-3 text-xs text-parchment-300/50">
-                點擊元素查看詳情；已選的格子點擊可移除。
+                點擊元素直接放入煉成格；已選的格子點擊可移除；點左上角 i 可查看詳情。
               </p>
               {collectionLoading ? (
                 <p className="text-sm text-parchment-300/60">載入圖鑑中…</p>
               ) : (
-                <ElementList entries={entries} onSelect={setDetailEntry} selectedIds={selectedIds} />
+                <ElementList
+                  entries={entries}
+                  onPick={combine.pickElement}
+                  onInfoClick={setDetailEntry}
+                  selectedIds={selectedIds}
+                />
               )}
             </section>
 
@@ -152,7 +163,8 @@ function GameHome({ uid }: { uid: string }) {
             entries={entries}
             discoveredCount={discoveredCount}
             worldFirstCount={worldFirstCount}
-            onSelect={setDetailEntry}
+            onPick={pickForCombine}
+            onInfoClick={setDetailEntry}
           />
         )}
       </main>
@@ -167,8 +179,7 @@ function GameHome({ uid }: { uid: string }) {
           elementsCache={elementsCache}
           onClose={() => setDetailEntry(null)}
           onAddToSlot={(element) => {
-            combine.pickElement(element);
-            setTab('combine');
+            pickForCombine(element);
             setDetailEntry(null);
           }}
         />
