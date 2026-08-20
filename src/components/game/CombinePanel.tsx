@@ -20,7 +20,7 @@ export function CombinePanel({
   onClearB: () => void;
   onAction: () => void;
 }) {
-  const canAct = slotA !== null && !pending;
+  const canAct = (slotA !== null || slotB !== null) && !pending;
   const label = mode === 'combine' ? '煉成' : '萃取';
 
   return (

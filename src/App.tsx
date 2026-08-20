@@ -43,7 +43,9 @@ function GameHome({ uid }: { uid: string }) {
   );
   const activeResult = combine.result ?? extract.result;
   const dismissActiveResult = combine.result ? combine.dismissResult : extract.dismissResult;
-  const mode: 'combine' | 'extract' = combine.slotB ? 'combine' : 'extract';
+  const mode: 'combine' | 'extract' =
+    combine.slotA && combine.slotB ? 'combine' : 'extract';
+  const extractSource = combine.slotA ?? combine.slotB;
 
   const ownedIds = useMemo(() => new Set(entries.map((e) => e.element.id)), [entries]);
   const elementsCache = useMemo(
@@ -120,11 +122,10 @@ function GameHome({ uid }: { uid: string }) {
               onClearA={combine.clearSlotA}
               onClearB={combine.clearSlotB}
               onAction={() => {
-                if (!combine.slotA) return;
-                if (combine.slotB) {
+                if (combine.slotA && combine.slotB) {
                   void combine.combine();
-                } else {
-                  void extract.extract(combine.slotA.id);
+                } else if (extractSource) {
+                  void extract.extract(extractSource.id);
                 }
               }}
             />
