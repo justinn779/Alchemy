@@ -21,6 +21,9 @@ const resultSchema = z.object({
   description: z.string().min(1).max(80).nullable(),
   category: z.enum(AI_ASSIGNABLE_CATEGORIES).nullable(),
   icons: z.array(z.string().min(1).max(8)).min(1).max(3).nullable(),
+  // 0–10; rounded to the nearest 0.5 in code below rather than trusting
+  // `multipleOf` support in OpenAI's strict structured-output mode.
+  rarity: z.number().min(0).max(10).nullable(),
 });
 
 const MAX_ATTEMPTS = 3;
@@ -62,7 +65,13 @@ export class OpenAIAlchemyProvider implements AlchemyAIProvider {
         if (!parsed.possible) {
           return { possible: false };
         }
-        if (!parsed.result || !parsed.description || !parsed.category || !parsed.icons) {
+        if (
+          !parsed.result ||
+          !parsed.description ||
+          !parsed.category ||
+          !parsed.icons ||
+          parsed.rarity === null
+        ) {
           throw new Error('OpenAI said possible=true but omitted required fields');
         }
         return {
@@ -71,6 +80,7 @@ export class OpenAIAlchemyProvider implements AlchemyAIProvider {
           description: parsed.description,
           category: parsed.category,
           icons: parsed.icons,
+          rarity: Math.min(10, Math.max(0, Math.round(parsed.rarity * 2) / 2)),
         };
       } catch (err) {
         lastError = err;

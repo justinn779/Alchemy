@@ -35,6 +35,7 @@ export async function grantElementIfMissing(
     elementId,
     discoveredAt: Date.now(),
     isWorldFirst,
+    isDiscoverer: false,
   };
   await ref.set(doc);
   return true;

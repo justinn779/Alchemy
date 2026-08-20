@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { fetchRecipesByResult } from '@/services/firestoreService';
 import { buildGenealogy, countCombineSteps, type GenealogyNode } from '@/services/genealogy';
 import { GenealogyTree } from './GenealogyTree';
+import { RarityStars } from './RarityStars';
 import type { ElementDoc, RecipeDoc } from '@/types/models';
 import type { CollectionEntry } from '@/types/view';
 
@@ -28,7 +29,7 @@ export function ElementDetailModal({
   onClose: () => void;
   onAddToSlot?: (element: ElementDoc) => void;
 }) {
-  const { element, discoveredAt, isWorldFirst } = entry;
+  const { element, discoveredAt, isWorldFirst, isDiscoverer } = entry;
 
   const [knownRecipes, setKnownRecipes] = useState<RecipeDoc[] | null>(null);
   const [genealogy, setGenealogy] = useState<GenealogyNode | null>(null);
@@ -66,11 +67,15 @@ export function ElementDetailModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="text-center">
-          {isWorldFirst && (
+          {isWorldFirst ? (
             <div className="mb-2 inline-block rounded-full bg-ember-500 px-3 py-1 text-xs font-bold tracking-wide text-void-950">
-              世界首創
+              世界首創（發明者）
             </div>
-          )}
+          ) : isDiscoverer ? (
+            <div className="mb-2 inline-block rounded-full border border-arcane-400 px-3 py-1 text-xs font-bold tracking-wide text-arcane-400">
+              發現者
+            </div>
+          ) : null}
           <div className="text-4xl leading-none">{element.icons?.join('') || '✨'}</div>
           <div className="mt-2 font-display text-3xl text-parchment-200">{element.name}</div>
           <p className="mt-2 text-sm text-parchment-300/70">{element.description}</p>
@@ -81,8 +86,14 @@ export function ElementDetailModal({
             <dt className="text-parchment-300/50">分類</dt>
             <dd>{element.category}</dd>
           </div>
+          <div className="flex items-center justify-between border-b border-void-700 py-1.5">
+            <dt className="text-parchment-300/50">稀有度</dt>
+            <dd>
+              <RarityStars rarity={element.rarity} />
+            </dd>
+          </div>
           <div className="flex justify-between border-b border-void-700 py-1.5">
-            <dt className="text-parchment-300/50">創造者</dt>
+            <dt className="text-parchment-300/50">發明者</dt>
             <dd>{element.isStarter ? '世界起源' : element.creatorName}</dd>
           </div>
           <div className="flex justify-between border-b border-void-700 py-1.5">

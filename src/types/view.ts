@@ -5,4 +5,5 @@ export interface CollectionEntry {
   element: ElementDoc;
   discoveredAt: number;
   isWorldFirst: boolean;
+  isDiscoverer: boolean;
 }

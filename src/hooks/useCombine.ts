@@ -8,6 +8,7 @@ export type CombineResultView =
       resultElement: ElementDoc;
       isNewToPlayer: boolean;
       isWorldFirst: boolean;
+      isDiscoverer: boolean;
     }
   | { success: false };
 
@@ -62,6 +63,7 @@ export function useCombine() {
               resultElement: data.resultElement,
               isNewToPlayer: data.isNewToPlayer,
               isWorldFirst: data.isWorldFirst,
+              isDiscoverer: data.isDiscoverer,
             }
           : { success: false },
       );

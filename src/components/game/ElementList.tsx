@@ -56,6 +56,8 @@ export function ElementList({
               <ElementCard
                 element={entry.element}
                 selected={selectedIds.has(entry.element.id)}
+                isInventor={entry.isWorldFirst}
+                isDiscoverer={entry.isDiscoverer}
                 onClick={() => onPick(entry.element)}
                 onInfoClick={() => onInfoClick(entry)}
               />

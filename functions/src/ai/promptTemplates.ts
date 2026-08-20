@@ -9,6 +9,13 @@ const ICON_RULES = `icons 是 1 到 3 個能代表這個概念的 emoji（僅在
     - 只有在真的無法取捨、需要三個才能完整表達時，才給 3 個，這應該是極少數情況。
     - 不要為了填滿數量而加入多餘或勉強的 emoji。`;
 
+const RARITY_RULES = `rarity 是這個概念的稀有程度，範圍 0～10，可以是半顆星（0、0.5、1、1.5 ... 10，共 21 個級距，僅在 possible 為 true 時需要）：
+    - 0～2：非常基礎、日常、隨處可見的概念（例如水、石頭、麵包、常見動物）。
+    - 3～5：需要一些條件、組合或專業知識才會出現的概念（例如合金、常見科技產品、特定職業）。
+    - 6～8：較特殊、複雜、需要深厚知識或多重轉化才能理解的概念（例如先進科技、罕見生物、抽象哲學概念）。
+    - 9～10：極為稀有、傳說級、獨特或難以想像的概念（例如神話造物、宇宙尺度現象、終極抽象概念）。
+    請根據概念本身的實際稀有程度誠實評分，讓分數分佈合理反映真實世界的稀有直覺，不要每次都給極端值或固定的中間值。`;
+
 const POSSIBLE_RULE_COMBINE = `possible 欄位：如果這兩個概念之間真的完全找不到任何合理、哪怕只是稍微牽強的關聯，沒辦法產生一個站得住腳的新概念，就把 possible 設為 false，其餘欄位可以留空。這應該是非常罕見的情況——大多數概念組合都能從某個角度找到合理連結，只有在真的毫無關聯、任何答案都會顯得荒謬時才使用 false。如果 possible 為 true，其餘欄位都必須填寫。`;
 
 const POSSIBLE_RULE_EXTRACT = `possible 欄位：如果這個概念真的抽象或基礎到無法再萃取出任何更本質、更核心的東西，就把 possible 設為 false，其餘欄位可以留空。這應該是非常罕見的情況。如果 possible 為 true，其餘欄位都必須填寫。`;
@@ -27,7 +34,8 @@ const COMBINE_SYSTEM_PROMPT = `你是「萬象爐」世界的規則引擎，不�
 7. 如果兩個輸入概念相同（例如「火」+「火」），仍然必須產生一個合理的新結果。
 8. description 只需要一句簡潔的說明，不要條列、不要多句。
 9. ${ICON_RULES}
-10. ${POSSIBLE_RULE_COMBINE}`;
+10. ${RARITY_RULES}
+11. ${POSSIBLE_RULE_COMBINE}`;
 
 const EXTRACT_SYSTEM_PROMPT = `你是「萬象爐」世界的規則引擎，不是聊天機器人。你的唯一任務是從單一概念「萃取」出一個更本質、更基礎、或與它緊密相關的核心概念，並以結構化 JSON 回答。
 
@@ -41,7 +49,8 @@ const EXTRACT_SYSTEM_PROMPT = `你是「萬象爐」世界的規則引擎，不�
 5. category 必須是以下其中之一：${CATEGORY_LIST}。
 6. description 只需要一句簡潔的說明，不要條列、不要多句。
 7. ${ICON_RULES}
-8. ${POSSIBLE_RULE_EXTRACT}`;
+8. ${RARITY_RULES}
+9. ${POSSIBLE_RULE_EXTRACT}`;
 
 export function buildCombineMessages(input: CombineInput): ChatMessage[] {
   return [

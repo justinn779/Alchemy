@@ -36,6 +36,8 @@ export interface ElementDoc {
   category: ElementCategory;
   /** 1–3 emoji representing the concept. 1 in the common case; 2 or 3 only when genuinely equally apt. */
   icons: string[];
+  /** 0–10 in 0.5 steps (21 levels). How rare/exotic the concept is. */
+  rarity: number;
   creatorId: string;
   creatorName: string;
   createdAt: number; // epoch millis
@@ -82,7 +84,11 @@ export interface UserElementDoc {
   uid: string;
   elementId: string;
   discoveredAt: number;
+  /** This player's combine/extract call was the one that created this element for the whole world (inventor). */
   isWorldFirst: boolean;
+  /** This player's combine/extract call was the first to find *this* recipe/source, but the result already
+   * existed via a different pairing (discoverer of a new path, not the original inventor). Mutually exclusive with isWorldFirst. */
+  isDiscoverer: boolean;
 }
 
 export interface CombineHistoryDoc {
@@ -113,6 +119,7 @@ export type CombineResult =
       resultElement: ElementDoc;
       isNewToPlayer: boolean;
       isWorldFirst: boolean;
+      isDiscoverer: boolean;
       goldEarned: number;
       goldTotal: number;
     }
@@ -124,6 +131,7 @@ export type ExtractResult =
       resultElement: ElementDoc;
       isNewToPlayer: boolean;
       isWorldFirst: boolean;
+      isDiscoverer: boolean;
       goldEarned: number;
       goldTotal: number;
     }
@@ -134,5 +142,6 @@ export type StarterElementName = (typeof STARTER_ELEMENT_NAMES)[number];
 
 export const GOLD_CONFIG = {
   NEW_DISCOVERY: 1,
+  DISCOVERER_BONUS: 3,
   WORLD_FIRST_BONUS: 10,
 } as const;

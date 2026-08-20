@@ -27,6 +27,7 @@ export function buildStarterElementDoc(seed: StarterElementSeed, createdAt: numb
     description: seed.description,
     category: '起源',
     icons: seed.icons,
+    rarity: 0,
     creatorId: SYSTEM_CREATOR_ID,
     creatorName: SYSTEM_CREATOR_NAME,
     createdAt,

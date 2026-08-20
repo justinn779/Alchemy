@@ -17,6 +17,8 @@ export type AlchemyAIResult =
       category: ElementCategory;
       /** 1–3 emoji representing the concept. 1 in the common case; 2 or 3 only when genuinely equally apt. */
       icons: string[];
+      /** 0–10 in 0.5 steps (21 levels). How rare/exotic the concept is. */
+      rarity: number;
     }
   | {
       /** The AI found no plausible connection at all — a legitimate, rare outcome. */

@@ -33,6 +33,7 @@ export function useExtract() {
               resultElement: data.resultElement,
               isNewToPlayer: data.isNewToPlayer,
               isWorldFirst: data.isWorldFirst,
+              isDiscoverer: data.isDiscoverer,
             }
           : { success: false },
       );

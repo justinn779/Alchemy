@@ -52,6 +52,7 @@ export const extractElement = onCall({ secrets: [OPENAI_API_KEY] }, async (reque
   // ---- extractRecipes cache fast path: never call the AI for a known
   // source, whether it previously succeeded or was already judged impossible ----
   let resultElement: ElementDoc | null = null;
+  let recipeIsNew = false;
   const cachedRecipe = await getExtractRecipe(elementId);
   if (cachedRecipe) {
     if (!cachedRecipe.failed && cachedRecipe.resultElementId) {
@@ -71,7 +72,7 @@ export const extractElement = onCall({ secrets: [OPENAI_API_KEY] }, async (reque
       const aiOutput = await provider.extract({ elementName: sourceElement.name });
       aiSucceeded = true;
 
-      resultElement = await db.runTransaction(async (tx) => {
+      const txResult = await db.runTransaction(async (tx) => {
         const recipeRef = extractRecipeDocRef(elementId);
         const recipeSnap = await tx.get(recipeRef);
         if (recipeSnap.exists) {
@@ -79,10 +80,13 @@ export const extractElement = onCall({ secrets: [OPENAI_API_KEY] }, async (reque
           // defer to whatever they committed, success or failure alike.
           const existing = recipeSnap.data() as ExtractRecipeDoc;
           if (existing.failed || !existing.resultElementId) {
-            return null;
+            return { element: null, recipeIsNew: false };
           }
           const existingElSnap = await tx.get(elementDocRef(existing.resultElementId));
-          return existingElSnap.data() as ElementDoc;
+          return {
+            element: existingElSnap.data() as ElementDoc,
+            recipeIsNew: false,
+          };
         }
 
         if (!aiOutput.possible) {
@@ -96,7 +100,7 @@ export const extractElement = onCall({ secrets: [OPENAI_API_KEY] }, async (reque
             createdAt: Date.now(),
           };
           tx.set(recipeRef, recipe);
-          return null;
+          return { element: null, recipeIsNew: true };
         }
 
         const normalizedName = normalizeElementName(aiOutput.result);
@@ -113,6 +117,7 @@ export const extractElement = onCall({ secrets: [OPENAI_API_KEY] }, async (reque
             description: aiOutput.description,
             category: aiOutput.category,
             icons: aiOutput.icons,
+            rarity: aiOutput.rarity,
             creatorId: uid,
             creatorName: userDoc.displayName,
             createdAt: Date.now(),
@@ -133,8 +138,11 @@ export const extractElement = onCall({ secrets: [OPENAI_API_KEY] }, async (reque
         };
         tx.set(recipeRef, recipe);
 
-        return element;
+        return { element, recipeIsNew: true };
       });
+
+      resultElement = txResult.element;
+      recipeIsNew = txResult.recipeIsNew;
 
       recordAiUsage({
         uid,
@@ -168,7 +176,7 @@ export const extractElement = onCall({ secrets: [OPENAI_API_KEY] }, async (reque
     return result;
   }
 
-  const settlement = await settleGrant(uid, resultElement);
+  const settlement = await settleGrant(uid, resultElement, recipeIsNew);
 
   const result: ExtractResult = {
     success: true,

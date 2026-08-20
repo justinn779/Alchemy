@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { CombineResultView } from '@/hooks/useCombine';
+import { RarityStars } from './RarityStars';
 
 export function CombineResultModal({
   result,
@@ -38,7 +39,11 @@ export function CombineResultModal({
           <>
             {result.isWorldFirst ? (
               <div className="mb-2 inline-block rounded-full bg-ember-500 px-3 py-1 text-xs font-bold tracking-wide text-void-950">
-                WORLD FIRST
+                WORLD FIRST · 發明者
+              </div>
+            ) : result.isDiscoverer ? (
+              <div className="mb-2 inline-block rounded-full border border-arcane-400 px-3 py-1 text-xs font-bold tracking-wide text-arcane-400">
+                發現者
               </div>
             ) : result.isNewToPlayer ? (
               <div className="mb-2 inline-block rounded-full bg-arcane-500 px-3 py-1 text-xs font-bold tracking-wide text-void-950">
@@ -56,6 +61,9 @@ export function CombineResultModal({
               {result.resultElement.description}
             </p>
             <p className="mt-1 text-xs text-parchment-300/40">{result.resultElement.category}</p>
+            <div className="mt-2 flex justify-center">
+              <RarityStars rarity={result.resultElement.rarity} />
+            </div>
           </>
         )}
 

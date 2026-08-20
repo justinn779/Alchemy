@@ -49,7 +49,12 @@ export function useCollection(uid: string | null) {
         .map((ue): CollectionEntry | null => {
           const element = elementsById.get(ue.elementId);
           if (!element) return null;
-          return { element, discoveredAt: ue.discoveredAt, isWorldFirst: ue.isWorldFirst };
+          return {
+            element,
+            discoveredAt: ue.discoveredAt,
+            isWorldFirst: ue.isWorldFirst,
+            isDiscoverer: ue.isDiscoverer ?? false,
+          };
         })
         .filter((entry): entry is CollectionEntry => entry !== null),
     [userElements, elementsById],

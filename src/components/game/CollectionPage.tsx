@@ -75,6 +75,8 @@ export function CollectionPage({
             <li key={entry.element.id}>
               <ElementCard
                 element={entry.element}
+                isInventor={entry.isWorldFirst}
+                isDiscoverer={entry.isDiscoverer}
                 onClick={() => onPick(entry.element)}
                 onInfoClick={() => onInfoClick(entry)}
               />
