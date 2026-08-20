@@ -67,7 +67,7 @@ export function CollectionPage({
       {visible.length === 0 ? (
         <p className="py-6 text-center text-sm text-parchment-300/40">找不到符合的元素。</p>
       ) : (
-        <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+        <ul className="flex flex-wrap gap-1.5">
           {visible.map((entry) => (
             <li key={entry.element.id}>
               <ElementCard element={entry.element} onClick={() => onSelect(entry)} />

@@ -2,15 +2,14 @@ import { useMemo, useState } from 'react';
 import { ElementCard } from './ElementCard';
 import { extractCategories, filterEntries } from '@/utils/collectionFilters';
 import type { CollectionEntry } from '@/types/view';
-import type { ElementDoc } from '@/types/models';
 
 export function ElementList({
   entries,
-  onPick,
+  onSelect,
   selectedIds,
 }: {
   entries: CollectionEntry[];
-  onPick: (element: ElementDoc) => void;
+  onSelect: (entry: CollectionEntry) => void;
   selectedIds: Set<string>;
 }) {
   const [search, setSearch] = useState('');
@@ -48,13 +47,13 @@ export function ElementList({
       {filtered.length === 0 ? (
         <p className="py-6 text-center text-sm text-parchment-300/40">找不到符合的元素。</p>
       ) : (
-        <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
-          {filtered.map(({ element }) => (
-            <li key={element.id}>
+        <ul className="flex flex-wrap gap-1.5">
+          {filtered.map((entry) => (
+            <li key={entry.element.id}>
               <ElementCard
-                element={element}
-                selected={selectedIds.has(element.id)}
-                onClick={() => onPick(element)}
+                element={entry.element}
+                selected={selectedIds.has(entry.element.id)}
+                onClick={() => onSelect(entry)}
               />
             </li>
           ))}

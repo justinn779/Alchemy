@@ -125,16 +125,12 @@ function GameHome({ uid }: { uid: string }) {
 
             <section>
               <p className="mb-3 text-xs text-parchment-300/50">
-                點選一個元素進行萃取，點選兩個元素即可煉成；點擊已選的格子可移除。
+                點擊元素查看詳情；已選的格子點擊可移除。
               </p>
               {collectionLoading ? (
                 <p className="text-sm text-parchment-300/60">載入圖鑑中…</p>
               ) : (
-                <ElementList
-                  entries={entries}
-                  onPick={combine.pickElement}
-                  selectedIds={selectedIds}
-                />
+                <ElementList entries={entries} onSelect={setDetailEntry} selectedIds={selectedIds} />
               )}
             </section>
 
@@ -170,6 +166,11 @@ function GameHome({ uid }: { uid: string }) {
           ownedIds={ownedIds}
           elementsCache={elementsCache}
           onClose={() => setDetailEntry(null)}
+          onAddToSlot={(element) => {
+            combine.pickElement(element);
+            setTab('combine');
+            setDetailEntry(null);
+          }}
         />
       )}
     </div>

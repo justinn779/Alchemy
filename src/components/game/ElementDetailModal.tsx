@@ -20,11 +20,13 @@ export function ElementDetailModal({
   ownedIds,
   elementsCache,
   onClose,
+  onAddToSlot,
 }: {
   entry: CollectionEntry;
   ownedIds: ReadonlySet<string>;
   elementsCache: ReadonlyMap<string, ElementDoc>;
   onClose: () => void;
+  onAddToSlot?: (element: ElementDoc) => void;
 }) {
   const { element, discoveredAt, isWorldFirst } = entry;
 
@@ -135,13 +137,24 @@ export function ElementDetailModal({
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-6 w-full rounded-lg border border-void-600 bg-void-900 px-4 py-2 text-sm transition hover:bg-void-700"
-        >
-          關閉
-        </button>
+        <div className="mt-6 flex gap-2">
+          {onAddToSlot && (
+            <button
+              type="button"
+              onClick={() => onAddToSlot(element)}
+              className="flex-1 rounded-lg bg-arcane-500 px-4 py-2 text-sm font-medium text-void-950 transition hover:bg-arcane-400"
+            >
+              加入煉成格
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 rounded-lg border border-void-600 bg-void-900 px-4 py-2 text-sm transition hover:bg-void-700"
+          >
+            關閉
+          </button>
+        </div>
       </div>
     </div>
   );

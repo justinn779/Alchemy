@@ -13,15 +13,14 @@ export function ElementCard({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full rounded-xl border p-3 text-center transition ${
+      className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-sm transition ${
         selected
           ? 'border-arcane-400 bg-arcane-400/10'
           : 'border-void-600 bg-void-800 hover:bg-void-700'
       }`}
     >
-      <div className="text-2xl leading-none">{element.icons?.join('') || '✨'}</div>
-      <div className="mt-1 font-display text-lg">{element.name}</div>
-      <div className="mt-1 truncate text-[11px] text-parchment-300/60">{element.category}</div>
+      <span className="leading-none">{element.icons?.join('') || '✨'}</span>
+      <span className="font-display leading-none">{element.name}</span>
     </button>
   );
 }

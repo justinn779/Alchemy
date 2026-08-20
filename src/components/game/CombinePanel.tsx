@@ -24,23 +24,21 @@ export function CombinePanel({
   const label = mode === 'combine' ? '煉成' : '萃取';
 
   return (
-    <div className="flex flex-col items-center gap-3">
-      <div className="flex items-center gap-4">
+    <div>
+      <div className="flex flex-wrap items-center gap-2">
         <ElementSlot element={slotA} onClear={onClearA} pending={pending} />
-        <span className="text-2xl text-parchment-300/40">＋</span>
+        <span className="text-parchment-300/40">＋</span>
         <ElementSlot element={slotB} onClear={onClearB} pending={pending} />
+        <button
+          type="button"
+          onClick={onAction}
+          disabled={!canAct}
+          className="h-10 rounded-full bg-arcane-500 px-6 font-medium text-void-950 transition hover:bg-arcane-400 disabled:cursor-not-allowed disabled:bg-void-700 disabled:text-parchment-300/40"
+        >
+          {pending ? `${label}中…` : label}
+        </button>
       </div>
-
-      <button
-        type="button"
-        onClick={onAction}
-        disabled={!canAct}
-        className="rounded-xl bg-arcane-500 px-8 py-2.5 font-medium text-void-950 transition hover:bg-arcane-400 disabled:cursor-not-allowed disabled:bg-void-700 disabled:text-parchment-300/40"
-      >
-        {pending ? `${label}中…` : label}
-      </button>
-
-      {error && <p className="text-sm text-ember-400">{error}</p>}
+      {error && <p className="mt-2 text-sm text-ember-400">{error}</p>}
     </div>
   );
 }
