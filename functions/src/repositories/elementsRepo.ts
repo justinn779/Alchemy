@@ -29,10 +29,11 @@ export function elementsByNormalizedNameQuery(normalizedName: string) {
 }
 
 /**
- * Seeds the 5 starter elements the first time any request needs them.
- * Content is static and identical regardless of who triggers the seed, so a
- * plain get-then-create (no transaction) is safe: a rare concurrent double
- * write is harmless because both writers would write byte-identical data.
+ * Seeds/upserts the 5 starter elements on every call. Content is static and
+ * identical regardless of who triggers it, so an unconditional upsert (no
+ * transaction) is safe — it also self-heals existing docs when the starter
+ * definitions change (e.g. icons added later), while preserving the
+ * original createdAt instead of resetting it.
  */
 export async function ensureStarterElements(): Promise<void> {
   const now = Date.now();
@@ -40,9 +41,8 @@ export async function ensureStarterElements(): Promise<void> {
     STARTER_ELEMENTS.map(async (seed) => {
       const ref = elementsCol.doc(seed.id);
       const snap = await ref.get();
-      if (!snap.exists) {
-        await ref.set(buildStarterElementDoc(seed, now));
-      }
+      const createdAt = snap.exists ? (snap.data() as ElementDoc).createdAt : now;
+      await ref.set(buildStarterElementDoc(seed, createdAt));
     }),
   );
 }

@@ -12,10 +12,8 @@ import { getUserDoc } from './repositories/usersRepo.js';
 import { getUserElement } from './repositories/userElementsRepo.js';
 import { recordAiUsage } from './repositories/aiUsageRepo.js';
 import { normalizeElementName } from './domain/normalize.js';
-import { calculateCurrentMana } from './domain/mana.js';
 import { settleGrant } from './domain/settlement.js';
 import { getAIProvider, OPENAI_API_KEY } from './ai/index.js';
-import { MANA_CONFIG } from './types/models.js';
 import type { ExtractResult, ElementDoc, ExtractRecipeDoc } from './types/models.js';
 
 const inputSchema = z.object({
@@ -49,17 +47,6 @@ export const extractElement = onCall({ secrets: [OPENAI_API_KEY] }, async (reque
   const owns = await getUserElement(uid, elementId);
   if (!owns) {
     throw new HttpsError('permission-denied', '你尚未擁有這個元素。');
-  }
-
-  // Fail fast before spending an AI call; authoritative check happens again
-  // inside settleGrant against the freshest data.
-  const precheck = calculateCurrentMana(
-    { mana: userDoc.mana, lastManaUpdatedAt: userDoc.lastManaUpdatedAt },
-    userDoc.maxMana,
-    Date.now(),
-  );
-  if (precheck.mana < MANA_CONFIG.EXTRACT_COST) {
-    throw new HttpsError('resource-exhausted', 'Mana 不足，請稍後再試。');
   }
 
   // ---- extractRecipes cache fast path: never call the AI for a known source ----
@@ -101,6 +88,7 @@ export const extractElement = onCall({ secrets: [OPENAI_API_KEY] }, async (reque
             normalizedName,
             description: aiOutput.description,
             category: aiOutput.category,
+            icons: aiOutput.icons,
             creatorId: uid,
             creatorName: userDoc.displayName,
             createdAt: Date.now(),
@@ -154,7 +142,7 @@ export const extractElement = onCall({ secrets: [OPENAI_API_KEY] }, async (reque
     throw new HttpsError('internal', '萃取失敗，請再試一次。');
   }
 
-  const settlement = await settleGrant(uid, resultElement, MANA_CONFIG.EXTRACT_COST);
+  const settlement = await settleGrant(uid, resultElement);
 
   const result: ExtractResult = {
     resultElement,

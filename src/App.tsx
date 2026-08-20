@@ -14,7 +14,6 @@ import { CombineResultModal } from '@/components/game/CombineResultModal';
 import { CollectionPage } from '@/components/game/CollectionPage';
 import { ElementDetailModal } from '@/components/game/ElementDetailModal';
 import { HistoryPanel } from '@/components/game/HistoryPanel';
-import { MANA_CONFIG } from '@/types/models';
 import type { CollectionEntry } from '@/types/view';
 
 type Tab = 'combine' | 'collection';
@@ -38,13 +37,12 @@ function GameHome({ uid }: { uid: string }) {
   const [tab, setTab] = useState<Tab>('combine');
   const [detailEntry, setDetailEntry] = useState<CollectionEntry | null>(null);
 
-  const manaAvailable = (profile?.mana ?? 0) >= MANA_CONFIG.COMBINE_COST;
-  const extractManaAvailable = (profile?.mana ?? 0) >= MANA_CONFIG.EXTRACT_COST;
   const selectedIds = new Set(
     [combine.slotA?.id, combine.slotB?.id].filter((id): id is string => Boolean(id)),
   );
   const activeResult = combine.result ?? extract.result;
   const dismissActiveResult = combine.result ? combine.dismissResult : extract.dismissResult;
+  const mode: 'combine' | 'extract' = combine.slotB ? 'combine' : 'extract';
 
   const ownedIds = useMemo(() => new Set(entries.map((e) => e.element.id)), [entries]);
   const elementsCache = useMemo(
@@ -66,9 +64,6 @@ function GameHome({ uid }: { uid: string }) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-4 text-sm">
-          <span title="Mana">
-            🔮 {profile?.mana ?? '—'} / {profile?.maxMana ?? '—'}
-          </span>
           <span title="Gold">🪙 {profile?.gold ?? '—'}</span>
           <span title="圖鑑數量">📖 {discoveredCount}</span>
           <span title="世界首創">🌟 {worldFirstCount}</span>
@@ -113,23 +108,24 @@ function GameHome({ uid }: { uid: string }) {
             <CombinePanel
               slotA={combine.slotA}
               slotB={combine.slotB}
-              pending={combine.pending}
-              manaAvailable={manaAvailable}
-              error={combine.error}
+              mode={mode}
+              pending={combine.pending || extract.pending}
+              error={combine.error ?? extract.error}
               onClearA={combine.clearSlotA}
               onClearB={combine.clearSlotB}
-              onCombine={() => void combine.combine()}
-              extractPending={extract.pending}
-              extractManaAvailable={extractManaAvailable}
-              extractError={extract.error}
-              onExtract={() => {
-                if (combine.slotA) void extract.extract(combine.slotA.id);
+              onAction={() => {
+                if (!combine.slotA) return;
+                if (combine.slotB) {
+                  void combine.combine();
+                } else {
+                  void extract.extract(combine.slotA.id);
+                }
               }}
             />
 
             <section>
               <p className="mb-3 text-xs text-parchment-300/50">
-                點選元素放入上方的煉成格，選滿兩個後即可煉成。
+                點選一個元素進行萃取，點選兩個元素即可煉成；點擊已選的格子可移除。
               </p>
               {collectionLoading ? (
                 <p className="text-sm text-parchment-300/60">載入圖鑑中…</p>

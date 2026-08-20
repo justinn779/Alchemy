@@ -36,7 +36,8 @@ export function CombineResultModal({
           </div>
         ) : null}
 
-        <div className="font-display text-3xl text-parchment-200">
+        <div className="text-4xl leading-none">{result.resultElement.icons?.join('') || '✨'}</div>
+        <div className="mt-2 font-display text-3xl text-parchment-200">
           {result.resultElement.name}
         </div>
         <p className="mt-2 text-sm text-parchment-300/70">{result.resultElement.description}</p>

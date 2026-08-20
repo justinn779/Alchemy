@@ -69,7 +69,8 @@ export function ElementDetailModal({
               世界首創
             </div>
           )}
-          <div className="font-display text-3xl text-parchment-200">{element.name}</div>
+          <div className="text-4xl leading-none">{element.icons?.join('') || '✨'}</div>
+          <div className="mt-2 font-display text-3xl text-parchment-200">{element.name}</div>
           <p className="mt-2 text-sm text-parchment-300/70">{element.description}</p>
         </div>
 

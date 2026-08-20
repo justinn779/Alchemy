@@ -15,6 +15,7 @@ const resultSchema = z.object({
   result: z.string().min(1).max(10),
   description: z.string().min(1).max(80),
   category: z.enum(AI_ASSIGNABLE_CATEGORIES),
+  icons: z.array(z.string().min(1).max(8)).min(1).max(3),
 });
 
 const MAX_ATTEMPTS = 3;
@@ -46,7 +47,7 @@ export class OpenAIAlchemyProvider implements AlchemyAIProvider {
           model: this.model,
           messages,
           response_format: zodResponseFormat(resultSchema, 'alchemy_result'),
-          max_completion_tokens: 200,
+          max_completion_tokens: 250,
           temperature: 1,
         });
         const parsed = completion.choices[0]?.message.parsed;

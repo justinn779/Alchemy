@@ -13,10 +13,8 @@ import { getUserElement } from './repositories/userElementsRepo.js';
 import { recordAiUsage } from './repositories/aiUsageRepo.js';
 import { recordCombineHistory } from './repositories/combineHistoryRepo.js';
 import { normalizeElementName } from './domain/normalize.js';
-import { calculateCurrentMana } from './domain/mana.js';
 import { settleGrant } from './domain/settlement.js';
 import { getAIProvider, OPENAI_API_KEY } from './ai/index.js';
-import { MANA_CONFIG } from './types/models.js';
 import type { CombineResult, ElementDoc, RecipeDoc } from './types/models.js';
 
 const inputSchema = z.object({
@@ -55,18 +53,6 @@ export const combineElements = onCall({ secrets: [OPENAI_API_KEY] }, async (requ
   ]);
   if (!ownsA || !ownsB) {
     throw new HttpsError('permission-denied', '你尚未擁有其中一個元素。');
-  }
-
-  // Fail fast (before spending an AI call) if mana is obviously insufficient.
-  // The authoritative check/deduction happens again inside settleGrant
-  // against the freshest data.
-  const precheck = calculateCurrentMana(
-    { mana: userDoc.mana, lastManaUpdatedAt: userDoc.lastManaUpdatedAt },
-    userDoc.maxMana,
-    Date.now(),
-  );
-  if (precheck.mana < MANA_CONFIG.COMBINE_COST) {
-    throw new HttpsError('resource-exhausted', 'Mana 不足，請稍後再試。');
   }
 
   const recipeKey = buildRecipeKey(elementAId, elementBId);
@@ -115,6 +101,7 @@ export const combineElements = onCall({ secrets: [OPENAI_API_KEY] }, async (requ
             normalizedName,
             description: aiOutput.description,
             category: aiOutput.category,
+            icons: aiOutput.icons,
             creatorId: uid,
             creatorName: userDoc.displayName,
             createdAt: Date.now(),
@@ -169,7 +156,7 @@ export const combineElements = onCall({ secrets: [OPENAI_API_KEY] }, async (requ
     throw new HttpsError('internal', '煉成失敗，請再試一次。');
   }
 
-  const settlement = await settleGrant(uid, resultElement, MANA_CONFIG.COMBINE_COST);
+  const settlement = await settleGrant(uid, resultElement);
 
   recordCombineHistory({
     uid,

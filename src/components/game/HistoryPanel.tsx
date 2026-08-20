@@ -14,7 +14,7 @@ function NameButton({
       onClick={() => onPick(element)}
       className="rounded px-1 text-parchment-200 underline decoration-void-600 decoration-dotted underline-offset-2 hover:text-arcane-400 hover:decoration-arcane-400"
     >
-      {element.name}
+      {element.icons?.join('') || '✨'} {element.name}
     </button>
   );
 }

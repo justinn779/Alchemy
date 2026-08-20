@@ -13,6 +13,8 @@ export interface AlchemyAIResult {
   result: string;
   description: string;
   category: ElementCategory;
+  /** 1–3 emoji representing the concept. 1 in the common case; 2 or 3 only when genuinely equally apt. */
+  icons: string[];
 }
 
 /**

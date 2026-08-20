@@ -34,6 +34,8 @@ export interface ElementDoc {
   normalizedName: string;
   description: string;
   category: ElementCategory;
+  /** 1–3 emoji representing the concept. 1 in the common case; 2 or 3 only when genuinely equally apt. */
+  icons: string[];
   creatorId: string;
   creatorName: string;
   createdAt: number; // epoch millis
@@ -64,9 +66,6 @@ export interface ExtractRecipeDoc {
 export interface UserDoc {
   displayName: string;
   photoURL: string | null;
-  mana: number;
-  maxMana: number;
-  lastManaUpdatedAt: number;
   gold: number;
   discoveryCount: number;
   worldFirstCount: number;
@@ -108,7 +107,6 @@ export interface CombineResult {
   resultElement: ElementDoc;
   isNewToPlayer: boolean;
   isWorldFirst: boolean;
-  manaRemaining: number;
   goldEarned: number;
   goldTotal: number;
 }
@@ -117,20 +115,12 @@ export interface ExtractResult {
   resultElement: ElementDoc;
   isNewToPlayer: boolean;
   isWorldFirst: boolean;
-  manaRemaining: number;
   goldEarned: number;
   goldTotal: number;
 }
 
 export const STARTER_ELEMENT_NAMES = ['水', '火', '土', '風', '雷'] as const;
 export type StarterElementName = (typeof STARTER_ELEMENT_NAMES)[number];
-
-export const MANA_CONFIG = {
-  MAX_MANA: 100,
-  COMBINE_COST: 5,
-  EXTRACT_COST: 8,
-  REGEN_INTERVAL_MS: 3 * 60 * 1000, // +1 mana every 3 minutes
-} as const;
 
 export const GOLD_CONFIG = {
   NEW_DISCOVERY: 1,

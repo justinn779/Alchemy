@@ -19,7 +19,8 @@ export function ElementCard({
           : 'border-void-600 bg-void-800 hover:bg-void-700'
       }`}
     >
-      <div className="font-display text-lg">{element.name}</div>
+      <div className="text-2xl leading-none">{element.icons?.join('') || '✨'}</div>
+      <div className="mt-1 font-display text-lg">{element.name}</div>
       <div className="mt-1 truncate text-[11px] text-parchment-300/60">{element.category}</div>
     </button>
   );
