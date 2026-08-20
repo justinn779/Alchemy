@@ -15,7 +15,7 @@ function describeExtractError(err: unknown): string {
   return '萃取失敗，請稍後再試一次。';
 }
 
-export function useExtract() {
+export function useExtract(onLocalGrant?: (view: Extract<CombineResultView, { success: true }>) => void) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CombineResultView | null>(null);
@@ -28,18 +28,20 @@ export function useExtract() {
     setError(null);
     try {
       const data = await extractElementApi(elementId);
-      setResult(
-        data.success
-          ? {
-              success: true,
-              resultElement: data.resultElement,
-              isNewToPlayer: data.isNewToPlayer,
-              isWorldFirst: data.isWorldFirst,
-              isDiscoverer: data.isDiscoverer,
-              isTestMode: data.isTestMode,
-            }
-          : { success: false },
-      );
+      if (data.success) {
+        const view: CombineResultView = {
+          success: true,
+          resultElement: data.resultElement,
+          isNewToPlayer: data.isNewToPlayer,
+          isWorldFirst: data.isWorldFirst,
+          isDiscoverer: data.isDiscoverer,
+          isTestMode: data.isTestMode,
+        };
+        setResult(view);
+        if (data.isTestMode) onLocalGrant?.(view);
+      } else {
+        setResult({ success: false });
+      }
       return true;
     } catch (err) {
       if (isTestModeLimitError(err)) {

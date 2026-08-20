@@ -35,8 +35,33 @@ function GameHome({ uid }: { uid: string }) {
   const { profile } = useUserProfile(uid);
   const { entries, loading: collectionLoading, discoveredCount, worldFirstCount } =
     useCollection(uid);
-  const combine = useCombine();
-  const extract = useExtract();
+  const isTestMode = user?.isAnonymous ?? false;
+
+  // Test mode never persists to Firestore, so nothing accumulates there —
+  // this local-only list lets the player keep building on what they just
+  // made within the session, purely client-side.
+  const [testModeElements, setTestModeElements] = useState<CollectionEntry[]>([]);
+  const addTestModeElement = (view: {
+    resultElement: ElementDoc;
+    isWorldFirst: boolean;
+    isDiscoverer: boolean;
+  }) => {
+    setTestModeElements((prev) => {
+      if (prev.some((e) => e.element.id === view.resultElement.id)) return prev;
+      return [
+        {
+          element: view.resultElement,
+          discoveredAt: Date.now(),
+          isWorldFirst: view.isWorldFirst,
+          isDiscoverer: view.isDiscoverer,
+        },
+        ...prev,
+      ];
+    });
+  };
+
+  const combine = useCombine(addTestModeElement);
+  const extract = useExtract(addTestModeElement);
   const history = useCombineHistory(uid);
   const [tab, setTab] = useState<Tab>('combine');
   const [detailEntry, setDetailEntry] = useState<CollectionEntry | null>(null);
@@ -51,10 +76,19 @@ function GameHome({ uid }: { uid: string }) {
   const extractSource = combine.slotA ?? combine.slotB;
   const testModeLimitReached = combine.testModeLimitReached || extract.testModeLimitReached;
 
-  const ownedIds = useMemo(() => new Set(entries.map((e) => e.element.id)), [entries]);
+  const effectiveEntries = isTestMode ? [...testModeElements, ...entries] : entries;
+  const effectiveDiscoveredCount = isTestMode ? effectiveEntries.length : discoveredCount;
+  const effectiveWorldFirstCount = isTestMode
+    ? testModeElements.filter((e) => e.isWorldFirst).length
+    : worldFirstCount;
+
+  const ownedIds = useMemo(
+    () => new Set(effectiveEntries.map((e) => e.element.id)),
+    [effectiveEntries],
+  );
   const elementsCache = useMemo(
-    () => new Map(entries.map((e) => [e.element.id, e.element])),
-    [entries],
+    () => new Map(effectiveEntries.map((e) => [e.element.id, e.element])),
+    [effectiveEntries],
   );
 
   const pickForCombine = (element: ElementDoc) => {
@@ -85,8 +119,8 @@ function GameHome({ uid }: { uid: string }) {
             </span>
           )}
           <span title="Gold">🪙 {profile?.gold ?? '—'}</span>
-          <span title="圖鑑數量">📖 {discoveredCount}</span>
-          <span title="世界首創">🌟 {worldFirstCount}</span>
+          <span title="圖鑑數量">📖 {effectiveDiscoveredCount}</span>
+          <span title="世界首創">🌟 {effectiveWorldFirstCount}</span>
           <button
             type="button"
             onClick={() => void signOut()}
@@ -155,7 +189,7 @@ function GameHome({ uid }: { uid: string }) {
                 <p className="text-sm text-parchment-300/60">載入圖鑑中…</p>
               ) : (
                 <ElementList
-                  entries={entries}
+                  entries={effectiveEntries}
                   onPick={combine.pickElement}
                   onInfoClick={setDetailEntry}
                   selectedIds={selectedIds}
@@ -178,9 +212,9 @@ function GameHome({ uid }: { uid: string }) {
           <p className="text-sm text-parchment-300/60">載入圖鑑中…</p>
         ) : (
           <CollectionPage
-            entries={entries}
-            discoveredCount={discoveredCount}
-            worldFirstCount={worldFirstCount}
+            entries={effectiveEntries}
+            discoveredCount={effectiveDiscoveredCount}
+            worldFirstCount={effectiveWorldFirstCount}
             onPick={pickForCombine}
             onInfoClick={setDetailEntry}
           />

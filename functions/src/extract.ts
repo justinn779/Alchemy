@@ -52,11 +52,14 @@ export const extractElement = onCall(
   if (!userDoc) {
     throw new HttpsError('failed-precondition', '玩家資料尚未初始化，請重新整理頁面。');
   }
-  if (!owns) {
+  const isTestMode = checkTestMode(auth, userDoc);
+
+  // Real accounts must actually own the source. Test-mode players extract
+  // using their local, session-only "as if I owned it" picks — never
+  // persisted, so there's nothing to check against.
+  if (!isTestMode && !owns) {
     throw new HttpsError('permission-denied', '你尚未擁有這個元素。');
   }
-
-  const isTestMode = checkTestMode(auth, userDoc);
 
   // ---- extractRecipes cache fast path: never call the AI for a known
   // source, whether it previously succeeded or was already judged impossible ----

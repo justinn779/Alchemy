@@ -26,7 +26,7 @@ function describeCombineError(err: unknown): string {
   return '煉成失敗，請稍後再試一次。';
 }
 
-export function useCombine() {
+export function useCombine(onLocalGrant?: (view: Extract<CombineResultView, { success: true }>) => void) {
   const [slotA, setSlotA] = useState<ElementDoc | null>(null);
   const [slotB, setSlotB] = useState<ElementDoc | null>(null);
   const [pending, setPending] = useState(false);
@@ -59,18 +59,20 @@ export function useCombine() {
     setError(null);
     try {
       const data = await combineElementsApi(slotA.id, slotB.id);
-      setResult(
-        data.success
-          ? {
-              success: true,
-              resultElement: data.resultElement,
-              isNewToPlayer: data.isNewToPlayer,
-              isWorldFirst: data.isWorldFirst,
-              isDiscoverer: data.isDiscoverer,
-              isTestMode: data.isTestMode,
-            }
-          : { success: false },
-      );
+      if (data.success) {
+        const view: CombineResultView = {
+          success: true,
+          resultElement: data.resultElement,
+          isNewToPlayer: data.isNewToPlayer,
+          isWorldFirst: data.isWorldFirst,
+          isDiscoverer: data.isDiscoverer,
+          isTestMode: data.isTestMode,
+        };
+        setResult(view);
+        if (data.isTestMode) onLocalGrant?.(view);
+      } else {
+        setResult({ success: false });
+      }
       setSlotA(null);
       setSlotB(null);
       return true;

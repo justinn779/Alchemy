@@ -58,11 +58,14 @@ export const combineElements = onCall(
   if (!userDoc) {
     throw new HttpsError('failed-precondition', '玩家資料尚未初始化，請重新整理頁面。');
   }
-  if (!ownsA || !ownsB) {
+  const isTestMode = checkTestMode(auth, userDoc);
+
+  // Real accounts must actually own both ingredients. Test-mode players
+  // combine using their local, session-only "as if I owned it" picks —
+  // never persisted, so there's nothing to check against.
+  if (!isTestMode && (!ownsA || !ownsB)) {
     throw new HttpsError('permission-denied', '你尚未擁有其中一個元素。');
   }
-
-  const isTestMode = checkTestMode(auth, userDoc);
 
   // ---- Recipe cache fast path: never call the AI for a known recipe,
   // whether it previously succeeded or was already judged impossible ----
