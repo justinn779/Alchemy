@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { extractElementApi } from '@/services/functionsApi';
+import { isTestModeLimitError } from '@/utils/functionsErrors';
 import type { CombineResultView } from './useCombine';
 
 function describeExtractError(err: unknown): string {
@@ -18,6 +19,7 @@ export function useExtract() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CombineResultView | null>(null);
+  const [testModeLimitReached, setTestModeLimitReached] = useState(false);
 
   /** Returns true if the request completed (with a result either way) so the caller can clear slots; false on a thrown error, so the selection survives for a retry. */
   const extract = async (elementId: string): Promise<boolean> => {
@@ -34,11 +36,16 @@ export function useExtract() {
               isNewToPlayer: data.isNewToPlayer,
               isWorldFirst: data.isWorldFirst,
               isDiscoverer: data.isDiscoverer,
+              isTestMode: data.isTestMode,
             }
           : { success: false },
       );
       return true;
     } catch (err) {
+      if (isTestModeLimitError(err)) {
+        setTestModeLimitReached(true);
+        return false;
+      }
       setError(describeExtractError(err));
       return false;
     } finally {
@@ -48,5 +55,5 @@ export function useExtract() {
 
   const dismissResult = () => setResult(null);
 
-  return { pending, error, result, extract, dismissResult };
+  return { pending, error, result, testModeLimitReached, extract, dismissResult };
 }

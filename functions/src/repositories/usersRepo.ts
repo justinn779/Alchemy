@@ -29,6 +29,8 @@ export async function ensureUserDoc(uid: string, profile: NewUserProfile): Promi
     gold: 0,
     discoveryCount: 0,
     worldFirstCount: 0,
+    hasSetDisplayName: false,
+    testActionCount: 0,
     createdAt: now,
     updatedAt: now,
   };
@@ -40,6 +42,21 @@ export async function incrementDiscoveryCount(uid: string, amount: number): Prom
   if (amount <= 0) return;
   await usersCol.doc(uid).update({
     discoveryCount: FieldValue.increment(amount),
+    updatedAt: Date.now(),
+  });
+}
+
+export async function incrementTestActionCount(uid: string): Promise<void> {
+  await usersCol.doc(uid).update({
+    testActionCount: FieldValue.increment(1),
+    updatedAt: Date.now(),
+  });
+}
+
+export async function setDisplayName(uid: string, displayName: string): Promise<void> {
+  await usersCol.doc(uid).update({
+    displayName,
+    hasSetDisplayName: true,
     updatedAt: Date.now(),
   });
 }

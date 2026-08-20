@@ -8,7 +8,9 @@ import {
   GoogleAuthProvider,
   onAuthStateChanged,
   signInAnonymously as firebaseSignInAnonymously,
+  signInWithCredential,
   signInWithPopup,
+  linkWithPopup,
   signOut as firebaseSignOut,
   type User,
 } from 'firebase/auth';
@@ -20,6 +22,8 @@ export interface AuthContextValue {
   error: string | null;
   signInWithGoogle: () => Promise<void>;
   signInAsGuest: () => Promise<void>;
+  /** Upgrades the current anonymous ("test mode") session to a real Google account, same uid preserved when possible. */
+  linkWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -75,6 +79,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const linkWithGoogle = async () => {
+    setError(null);
+    const current = auth.currentUser;
+    if (!current) {
+      await signInWithGoogle();
+      return;
+    }
+    try {
+      await linkWithPopup(current, new GoogleAuthProvider());
+    } catch (err) {
+      // That Google account is already a real account elsewhere — sign into
+      // it directly instead. The anonymous test-mode session (which never
+      // persisted anything of its own) is simply abandoned.
+      if (
+        err &&
+        typeof err === 'object' &&
+        'code' in err &&
+        (err as { code: unknown }).code === 'auth/credential-already-in-use' &&
+        'customData' in err
+      ) {
+        const credential = GoogleAuthProvider.credentialFromError(
+          err as Parameters<typeof GoogleAuthProvider.credentialFromError>[0],
+        );
+        if (credential) {
+          await signInWithCredential(auth, credential);
+          return;
+        }
+      }
+      setError(describeAuthError(err));
+      throw err;
+    }
+  };
+
   const signOut = async () => {
     setError(null);
     await firebaseSignOut(auth);
@@ -82,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, error, signInWithGoogle, signInAsGuest, signOut }}
+      value={{ user, loading, error, signInWithGoogle, signInAsGuest, linkWithGoogle, signOut }}
     >
       {children}
     </AuthContext.Provider>

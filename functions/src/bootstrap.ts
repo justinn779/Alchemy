@@ -3,6 +3,7 @@ import { ensureStarterElements } from './repositories/elementsRepo.js';
 import { ensureUserDoc, incrementDiscoveryCount, getUserDoc } from './repositories/usersRepo.js';
 import { grantElementIfMissing } from './repositories/userElementsRepo.js';
 import { STARTER_ELEMENTS } from './domain/starterElements.js';
+import { isAnonymousAuth } from './domain/authHelpers.js';
 import type { UserDoc } from './types/models.js';
 
 /**
@@ -40,5 +41,7 @@ export const ensureUserInitialized = onCall(async (request) => {
   return {
     user,
     starterElementIds: STARTER_ELEMENTS.map((s) => s.id),
+    // Only ever asked of real (non-anonymous) accounts that haven't picked one yet.
+    needsInventorTitle: !user.hasSetDisplayName && !isAnonymousAuth(auth),
   };
 });

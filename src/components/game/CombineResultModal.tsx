@@ -64,6 +64,11 @@ export function CombineResultModal({
             <div className="mt-2 flex justify-center">
               <RarityStars rarity={result.resultElement.rarity} />
             </div>
+            {result.isTestMode && (
+              <p className="mt-3 text-xs text-parchment-300/40">
+                測試模式預覽，不會加入你的圖鑑或計入紀錄。
+              </p>
+            )}
           </>
         )}
 

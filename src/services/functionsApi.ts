@@ -5,6 +5,7 @@ import type { CombineResult, ExtractResult, UserDoc } from '@/types/models';
 export interface EnsureUserInitializedResult {
   user: UserDoc;
   starterElementIds: string[];
+  needsInventorTitle: boolean;
 }
 
 /**
@@ -37,4 +38,12 @@ export async function extractElementApi(elementId: string): Promise<ExtractResul
   const call = httpsCallable<{ elementId: string }, ExtractResult>(functions, 'extractElement');
   const { data } = await call({ elementId });
   return data;
+}
+
+export async function setInventorTitleApi(title: string): Promise<void> {
+  const call = httpsCallable<{ title: string }, { displayName: string }>(
+    functions,
+    'setInventorTitle',
+  );
+  await call({ title });
 }

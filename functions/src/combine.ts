@@ -14,6 +14,8 @@ import { recordAiUsage } from './repositories/aiUsageRepo.js';
 import { recordCombineHistory } from './repositories/combineHistoryRepo.js';
 import { normalizeElementName } from './domain/normalize.js';
 import { settleGrant } from './domain/settlement.js';
+import { checkTestMode } from './domain/testMode.js';
+import { incrementTestActionCount } from './repositories/usersRepo.js';
 import { getAIProvider, OPENAI_API_KEY } from './ai/index.js';
 import type { CombineResult, ElementDoc, RecipeDoc } from './types/models.js';
 
@@ -22,7 +24,9 @@ const inputSchema = z.object({
   elementBId: z.string().min(1),
 });
 
-export const combineElements = onCall({ secrets: [OPENAI_API_KEY] }, async (request) => {
+export const combineElements = onCall(
+  { secrets: [OPENAI_API_KEY], memory: '512MiB', cpu: 1 },
+  async (request) => {
   const auth = request.auth;
   if (!auth) {
     throw new HttpsError('unauthenticated', '需要登入才能進行煉成。');
@@ -35,10 +39,18 @@ export const combineElements = onCall({ secrets: [OPENAI_API_KEY] }, async (requ
   }
   const { elementAId, elementBId } = parsed.data;
 
-  const [elementA, elementB, userDoc] = await Promise.all([
+  const recipeKey = buildRecipeKey(elementAId, elementBId);
+
+  // Every read here is independent of the others, so fire them all in one
+  // round trip instead of three sequential ones — shaves ~100-200ms off
+  // every combine call, cache-hit or not.
+  const [elementA, elementB, userDoc, ownsA, ownsB, cachedRecipe] = await Promise.all([
     getElementById(elementAId),
     getElementById(elementBId),
     getUserDoc(uid),
+    getUserElement(uid, elementAId),
+    getUserElement(uid, elementBId),
+    getRecipe(recipeKey),
   ]);
   if (!elementA || !elementB) {
     throw new HttpsError('not-found', '找不到指定的元素，請重新整理頁面再試一次。');
@@ -46,22 +58,16 @@ export const combineElements = onCall({ secrets: [OPENAI_API_KEY] }, async (requ
   if (!userDoc) {
     throw new HttpsError('failed-precondition', '玩家資料尚未初始化，請重新整理頁面。');
   }
-
-  const [ownsA, ownsB] = await Promise.all([
-    getUserElement(uid, elementAId),
-    getUserElement(uid, elementBId),
-  ]);
   if (!ownsA || !ownsB) {
     throw new HttpsError('permission-denied', '你尚未擁有其中一個元素。');
   }
 
-  const recipeKey = buildRecipeKey(elementAId, elementBId);
+  const isTestMode = checkTestMode(auth, userDoc);
 
   // ---- Recipe cache fast path: never call the AI for a known recipe,
   // whether it previously succeeded or was already judged impossible ----
   let resultElement: ElementDoc | null = null;
   let recipeIsNew = false;
-  const cachedRecipe = await getRecipe(recipeKey);
   if (cachedRecipe) {
     if (!cachedRecipe.failed && cachedRecipe.resultElementId) {
       resultElement = await getElementById(cachedRecipe.resultElementId);
@@ -187,7 +193,26 @@ export const combineElements = onCall({ secrets: [OPENAI_API_KEY] }, async (requ
   }
 
   if (!resultElement) {
+    if (isTestMode) await incrementTestActionCount(uid);
     const result: CombineResult = { success: false };
+    return result;
+  }
+
+  if (isTestMode) {
+    // Test mode: the world-shared element/recipe above is still real and
+    // cached for everyone, but nothing is saved to *this* player's own
+    // collection — no grant, no gold, no history. Just a preview.
+    await incrementTestActionCount(uid);
+    const result: CombineResult = {
+      success: true,
+      resultElement,
+      isNewToPlayer: true,
+      isWorldFirst: resultElement.creatorId === uid,
+      isDiscoverer: resultElement.creatorId !== uid && recipeIsNew,
+      goldEarned: 0,
+      goldTotal: userDoc.gold,
+      isTestMode: true,
+    };
     return result;
   }
 
@@ -204,6 +229,7 @@ export const combineElements = onCall({ secrets: [OPENAI_API_KEY] }, async (requ
     success: true,
     resultElement,
     ...settlement,
+    isTestMode: false,
   };
   return result;
 });

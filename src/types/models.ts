@@ -75,6 +75,10 @@ export interface UserDoc {
   gold: number;
   discoveryCount: number;
   worldFirstCount: number;
+  /** True once the player has chosen a custom "發明家稱號" (only asked of real, non-anonymous accounts). */
+  hasSetDisplayName: boolean;
+  /** Combine/extract actions taken while signed in anonymously ("test mode"). Capped at TEST_MODE_ACTION_LIMIT. */
+  testActionCount: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -122,6 +126,8 @@ export type CombineResult =
       isDiscoverer: boolean;
       goldEarned: number;
       goldTotal: number;
+      /** True if this was a test-mode (anonymous) preview: nothing was saved to the player's collection. */
+      isTestMode: boolean;
     }
   | { success: false };
 
@@ -134,8 +140,12 @@ export type ExtractResult =
       isDiscoverer: boolean;
       goldEarned: number;
       goldTotal: number;
+      /** True if this was a test-mode (anonymous) preview: nothing was saved to the player's collection. */
+      isTestMode: boolean;
     }
   | { success: false };
+
+export const TEST_MODE_ACTION_LIMIT = 30;
 
 export const STARTER_ELEMENT_NAMES = ['水', '火', '土', '風', '雷'] as const;
 export type StarterElementName = (typeof STARTER_ELEMENT_NAMES)[number];

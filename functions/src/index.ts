@@ -12,3 +12,4 @@ export const ping = onCall(() => {
 export { ensureUserInitialized } from './bootstrap.js';
 export { combineElements } from './combine.js';
 export { extractElement } from './extract.js';
+export { setInventorTitle } from './setInventorTitle.js';

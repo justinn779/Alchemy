@@ -78,8 +78,11 @@ export function LoginScreen() {
           disabled={pending !== null}
           className="rounded-xl border border-void-600 bg-void-800 px-6 py-3 font-medium text-parchment-200 transition hover:bg-void-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {pending === 'guest' ? '登入中…' : '以訪客身分開始'}
+          {pending === 'guest' ? '登入中…' : '跳過，先試玩看看'}
         </button>
+        <p className="text-xs text-parchment-300/40">
+          試玩模式最多可煉成/萃取 30 次，成果不會保留；準備好了再登入正式開始收集。
+        </p>
       </div>
 
       {error && <p className="text-sm text-ember-400">{error}</p>}

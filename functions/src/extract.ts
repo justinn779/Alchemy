@@ -13,6 +13,8 @@ import { getUserElement } from './repositories/userElementsRepo.js';
 import { recordAiUsage } from './repositories/aiUsageRepo.js';
 import { normalizeElementName } from './domain/normalize.js';
 import { settleGrant } from './domain/settlement.js';
+import { checkTestMode } from './domain/testMode.js';
+import { incrementTestActionCount } from './repositories/usersRepo.js';
 import { getAIProvider, OPENAI_API_KEY } from './ai/index.js';
 import type { ExtractResult, ElementDoc, ExtractRecipeDoc } from './types/models.js';
 
@@ -20,7 +22,9 @@ const inputSchema = z.object({
   elementId: z.string().min(1),
 });
 
-export const extractElement = onCall({ secrets: [OPENAI_API_KEY] }, async (request) => {
+export const extractElement = onCall(
+  { secrets: [OPENAI_API_KEY], memory: '512MiB', cpu: 1 },
+  async (request) => {
   const auth = request.auth;
   if (!auth) {
     throw new HttpsError('unauthenticated', '需要登入才能進行萃取。');
@@ -33,9 +37,14 @@ export const extractElement = onCall({ secrets: [OPENAI_API_KEY] }, async (reque
   }
   const { elementId } = parsed.data;
 
-  const [sourceElement, userDoc] = await Promise.all([
+  // Every read here is independent of the others, so fire them all in one
+  // round trip instead of sequential ones — shaves ~100-200ms off every
+  // extract call, cache-hit or not.
+  const [sourceElement, userDoc, owns, cachedRecipe] = await Promise.all([
     getElementById(elementId),
     getUserDoc(uid),
+    getUserElement(uid, elementId),
+    getExtractRecipe(elementId),
   ]);
   if (!sourceElement) {
     throw new HttpsError('not-found', '找不到指定的元素，請重新整理頁面再試一次。');
@@ -43,17 +52,16 @@ export const extractElement = onCall({ secrets: [OPENAI_API_KEY] }, async (reque
   if (!userDoc) {
     throw new HttpsError('failed-precondition', '玩家資料尚未初始化，請重新整理頁面。');
   }
-
-  const owns = await getUserElement(uid, elementId);
   if (!owns) {
     throw new HttpsError('permission-denied', '你尚未擁有這個元素。');
   }
+
+  const isTestMode = checkTestMode(auth, userDoc);
 
   // ---- extractRecipes cache fast path: never call the AI for a known
   // source, whether it previously succeeded or was already judged impossible ----
   let resultElement: ElementDoc | null = null;
   let recipeIsNew = false;
-  const cachedRecipe = await getExtractRecipe(elementId);
   if (cachedRecipe) {
     if (!cachedRecipe.failed && cachedRecipe.resultElementId) {
       resultElement = await getElementById(cachedRecipe.resultElementId);
@@ -172,7 +180,23 @@ export const extractElement = onCall({ secrets: [OPENAI_API_KEY] }, async (reque
   }
 
   if (!resultElement) {
+    if (isTestMode) await incrementTestActionCount(uid);
     const result: ExtractResult = { success: false };
+    return result;
+  }
+
+  if (isTestMode) {
+    await incrementTestActionCount(uid);
+    const result: ExtractResult = {
+      success: true,
+      resultElement,
+      isNewToPlayer: true,
+      isWorldFirst: resultElement.creatorId === uid,
+      isDiscoverer: resultElement.creatorId !== uid && recipeIsNew,
+      goldEarned: 0,
+      goldTotal: userDoc.gold,
+      isTestMode: true,
+    };
     return result;
   }
 
@@ -182,6 +206,7 @@ export const extractElement = onCall({ secrets: [OPENAI_API_KEY] }, async (reque
     success: true,
     resultElement,
     ...settlement,
+    isTestMode: false,
   };
   return result;
 });

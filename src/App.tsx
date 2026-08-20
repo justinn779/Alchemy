@@ -8,12 +8,15 @@ import { useCombine } from '@/hooks/useCombine';
 import { useExtract } from '@/hooks/useExtract';
 import { useCombineHistory } from '@/hooks/useCombineHistory';
 import { LoginScreen } from '@/components/auth/LoginScreen';
+import { InventorTitleModal } from '@/components/auth/InventorTitleModal';
+import { TestModeLimitModal } from '@/components/auth/TestModeLimitModal';
 import { CombinePanel } from '@/components/game/CombinePanel';
 import { ElementList } from '@/components/game/ElementList';
 import { CombineResultModal } from '@/components/game/CombineResultModal';
 import { CollectionPage } from '@/components/game/CollectionPage';
 import { ElementDetailModal } from '@/components/game/ElementDetailModal';
 import { HistoryPanel } from '@/components/game/HistoryPanel';
+import { TEST_MODE_ACTION_LIMIT } from '@/types/models';
 import type { CollectionEntry } from '@/types/view';
 import type { ElementDoc } from '@/types/models';
 
@@ -46,6 +49,7 @@ function GameHome({ uid }: { uid: string }) {
   const mode: 'combine' | 'extract' =
     combine.slotA && combine.slotB ? 'combine' : 'extract';
   const extractSource = combine.slotA ?? combine.slotB;
+  const testModeLimitReached = combine.testModeLimitReached || extract.testModeLimitReached;
 
   const ownedIds = useMemo(() => new Set(entries.map((e) => e.element.id)), [entries]);
   const elementsCache = useMemo(
@@ -67,11 +71,19 @@ function GameHome({ uid }: { uid: string }) {
           </h1>
           <p className="text-xs text-parchment-300/60">
             {user?.isAnonymous
-              ? '訪客煉金術士'
+              ? '試玩中的煉金術士'
               : (profile?.displayName ?? user?.displayName ?? '煉金術士')}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-4 text-sm">
+          {user?.isAnonymous && (
+            <span
+              title="試玩次數"
+              className="rounded-full border border-void-600 px-2 py-0.5 text-xs text-parchment-300/60"
+            >
+              🧪 {profile?.testActionCount ?? 0}/{TEST_MODE_ACTION_LIMIT}
+            </span>
+          )}
           <span title="Gold">🪙 {profile?.gold ?? '—'}</span>
           <span title="圖鑑數量">📖 {discoveredCount}</span>
           <span title="世界首創">🌟 {worldFirstCount}</span>
@@ -190,13 +202,17 @@ function GameHome({ uid }: { uid: string }) {
           }}
         />
       )}
+      {testModeLimitReached && <TestModeLimitModal />}
     </div>
   );
 }
 
 function AppShell() {
   const { user, loading: authLoading } = useAuth();
-  const bootstrapStatus = useGameBootstrap(user?.uid ?? null);
+  const { status: bootstrapStatus, needsInventorTitle, clearNeedsInventorTitle } = useGameBootstrap(
+    user?.uid ?? null,
+    user?.isAnonymous ?? false,
+  );
 
   if (authLoading) {
     return <LoadingSpinner />;
@@ -216,6 +232,10 @@ function AppShell() {
         <p className="text-sm text-ember-400">初始化玩家資料失敗，請重新整理頁面再試一次。</p>
       </div>
     );
+  }
+
+  if (needsInventorTitle) {
+    return <InventorTitleModal onDone={clearNeedsInventorTitle} />;
   }
 
   return <GameHome uid={user.uid} />;

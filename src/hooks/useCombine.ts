@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { combineElementsApi } from '@/services/functionsApi';
+import { isTestModeLimitError } from '@/utils/functionsErrors';
 import type { ElementDoc } from '@/types/models';
 
 export type CombineResultView =
@@ -9,6 +10,7 @@ export type CombineResultView =
       isNewToPlayer: boolean;
       isWorldFirst: boolean;
       isDiscoverer: boolean;
+      isTestMode: boolean;
     }
   | { success: false };
 
@@ -30,6 +32,7 @@ export function useCombine() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CombineResultView | null>(null);
+  const [testModeLimitReached, setTestModeLimitReached] = useState(false);
 
   /** First click fills slot A, second fills slot B, a third replaces A and clears B. */
   const pickElement = (element: ElementDoc) => {
@@ -64,6 +67,7 @@ export function useCombine() {
               isNewToPlayer: data.isNewToPlayer,
               isWorldFirst: data.isWorldFirst,
               isDiscoverer: data.isDiscoverer,
+              isTestMode: data.isTestMode,
             }
           : { success: false },
       );
@@ -71,6 +75,10 @@ export function useCombine() {
       setSlotB(null);
       return true;
     } catch (err) {
+      if (isTestModeLimitError(err)) {
+        setTestModeLimitReached(true);
+        return false;
+      }
       setError(describeCombineError(err));
       return false;
     } finally {
@@ -86,6 +94,7 @@ export function useCombine() {
     pending,
     error,
     result,
+    testModeLimitReached,
     pickElement,
     clearSlotA,
     clearSlotB,
