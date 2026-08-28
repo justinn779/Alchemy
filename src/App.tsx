@@ -10,6 +10,7 @@ import { useCombineHistory } from '@/hooks/useCombineHistory';
 import { LoginScreen } from '@/components/auth/LoginScreen';
 import { InventorTitleModal } from '@/components/auth/InventorTitleModal';
 import { TestModeLimitModal } from '@/components/auth/TestModeLimitModal';
+import { AccountModal } from '@/components/auth/AccountModal';
 import { CombinePanel } from '@/components/game/CombinePanel';
 import { ElementList } from '@/components/game/ElementList';
 import { CombineResultModal } from '@/components/game/CombineResultModal';
@@ -65,6 +66,7 @@ function GameHome({ uid }: { uid: string }) {
   const history = useCombineHistory(uid);
   const [tab, setTab] = useState<Tab>('combine');
   const [detailEntry, setDetailEntry] = useState<CollectionEntry | null>(null);
+  const [showAccountModal, setShowAccountModal] = useState(false);
 
   const selectedIds = new Set(
     [combine.slotA?.id, combine.slotB?.id].filter((id): id is string => Boolean(id)),
@@ -123,10 +125,10 @@ function GameHome({ uid }: { uid: string }) {
           <span title="世界首創">🌟 {effectiveWorldFirstCount}</span>
           <button
             type="button"
-            onClick={() => void signOut()}
+            onClick={() => setShowAccountModal(true)}
             className="rounded-lg border border-void-600 bg-void-800 px-3 py-1.5 text-xs transition hover:bg-void-700"
           >
-            登出
+            帳號
           </button>
         </div>
       </header>
@@ -237,6 +239,19 @@ function GameHome({ uid }: { uid: string }) {
         />
       )}
       {testModeLimitReached && <TestModeLimitModal />}
+      {showAccountModal && user && (
+        <AccountModal
+          user={user}
+          displayName={
+            user.isAnonymous ? '試玩中的煉金術士' : (profile?.displayName ?? user.displayName ?? '煉金術士')
+          }
+          gold={profile?.gold ?? 0}
+          discoveredCount={effectiveDiscoveredCount}
+          worldFirstCount={effectiveWorldFirstCount}
+          onClose={() => setShowAccountModal(false)}
+          onSignOut={() => void signOut()}
+        />
+      )}
     </div>
   );
 }
